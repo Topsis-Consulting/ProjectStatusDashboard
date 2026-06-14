@@ -1,0 +1,45 @@
+steps:
+  # Build and push Docker image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - us-central1-docker.pkg.dev/topsis-client-portal/client-portal/client-portal:$COMMIT_SHA
+      - -t
+      - us-central1-docker.pkg.dev/topsis-client-portal/client-portal/client-portal:latest
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - us-central1-docker.pkg.dev/topsis-client-portal/client-portal/client-portal
+
+  # Deploy to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - client-portal
+      - --image=us-central1-docker.pkg.dev/topsis-client-portal/client-portal/client-portal:$COMMIT_SHA
+      - --region=us-central1
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --memory=512Mi
+      - --cpu=1
+      - --min-instances=0
+      - --max-instances=5
+      - --service-account=client-portal-sa@topsis-client-portal.iam.gserviceaccount.com
+      - --vpc-connector=client-portal-connector
+      - --vpc-egress=private-ranges-only
+      - --set-secrets=SESSION_SECRET=PORTAL_SESSION_SECRET:latest,JIRA_URL=PORTAL_JIRA_URL:latest,JIRA_USER_EMAIL=PORTAL_JIRA_USER_EMAIL:latest,JIRA_API_TOKEN=PORTAL_JIRA_API_TOKEN:latest,EMAIL_API_KEY=PORTAL_EMAIL_API_KEY:latest,REDIS_URL=PORTAL_REDIS_URL:latest,TENANT_REGISTRY=PORTAL_TENANT_REGISTRY:latest
+      - --project=topsis-client-portal
+
+images:
+  - us-central1-docker.pkg.dev/topsis-client-portal/client-portal/client-portal:$COMMIT_SHA
+  - us-central1-docker.pkg.dev/topsis-client-portal/client-portal/client-portal:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
