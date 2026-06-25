@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Topsis Consulting — Client Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#f75b3c',
+            'brand-dark': '#d94a2e',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .brand-panel {
+      background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #f75b3c;
+      box-shadow: 0 0 0 3px rgba(247, 91, 60, 0.15);
+    }
+    .btn-brand {
+      background-color: #f75b3c;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+    .btn-brand:hover {
+      background-color: #d94a2e;
+    }
+    .btn-brand:active {
+      transform: scale(0.98);
+    }
+    .dot-pattern {
+      background-image: radial-gradient(rgba(247, 91, 60, 0.15) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden font-sans">
+
+  <!-- Left: Brand Panel -->
+  <div class="brand-panel dot-pattern hidden md:flex md:w-1/2 flex-col justify-between p-12 text-white">
+    <div>
+      <!-- Logo -->
+      <div>
+        <img src="../static/Topsis_logo.png" alt="Topsis Consulting" class="h-16 w-auto" />
+      </div>
+    </div>
+
+    <!-- Center content -->
+    <div class="space-y-6">
+      <div class="space-y-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium" style="background: rgba(247,91,60,0.2); color: #f75b3c; border: 1px solid rgba(247,91,60,0.3);">
+          Client Portal
+        </div>
+        <h1 class="text-4xl font-bold leading-tight text-white">
+          Your project,<br/>always in view.
+        </h1>
+        <p class="text-base text-slate-400 leading-relaxed max-w-xs">
+          Real-time visibility into your project's progress, milestones, and open items — in one place.
+        </p>
+      </div>
+
+      <!-- Feature pills -->
+      <div class="space-y-2">
+        <div class="flex items-center gap-3 text-sm text-slate-300">
+          <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style="background: rgba(247,91,60,0.2);">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="#f75b3c"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#f75b3c" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          Live Jira data, no login required
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-300">
+          <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style="background: rgba(247,91,60,0.2);">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="#f75b3c"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#f75b3c" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          Secure email verification
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-300">
+          <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style="background: rgba(247,91,60,0.2);">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="#f75b3c"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#f75b3c" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          Your data only — always
+        </div>
+      </div>
+    </div>
+
+    <div class="text-xs text-slate-500">
+      © 2026 Topsis Consulting. All rights reserved.
+    </div>
+  </div>
+
+  <!-- Right: Login Form -->
+  <div class="w-full md:w-1/2 flex flex-col justify-center px-8 sm:px-12 lg:px-16 bg-white">
+    <div class="max-w-sm w-full mx-auto space-y-8">
+
+      <!-- Mobile logo -->
+      <div class="md:hidden">
+        <img src="../static/Topsis_logo.png" alt="Topsis Consulting" class="h-12 w-auto" />
+      </div>
+
+      <!-- Step 1: Email -->
+      <div id="step-email" class="space-y-6">
+        <div class="space-y-1">
+          <h2 class="text-2xl font-bold text-gray-900">Welcome back</h2>
+          <p class="text-sm text-gray-500">Enter your work email to receive a secure access code.</p>
+        </div>
+
+        <form id="email-form" class="space-y-4" onsubmit="handleEmailSubmit(event)" action="/auth/request" method="post">
+          <div class="space-y-1.5">
+            <label for="email" class="block text-sm font-medium text-gray-700">Work email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="you@company.com"
+              required
+              class="input-field w-full px-4 py-3 rounded-lg border border-gray-200 text-gray-900 text-sm placeholder-gray-400 transition-all"
+            />
+          </div>
+          <button type="submit" class="btn-brand w-full py-3 rounded-lg text-white text-sm font-semibold">
+            Send access code
+          </button>
+        </form>
+
+        <p class="text-xs text-gray-400 text-center">
+          By signing in you agree to Topsis Consulting's
+          <a href="#" class="underline hover:text-gray-600">terms of use</a>.
+        </p>
+      </div>
+
+      <!-- Step 2: OTP (hidden until email submitted) -->
+      <div id="step-otp" class="space-y-6 hidden">
+        <div class="space-y-1">
+          <h2 class="text-2xl font-bold text-gray-900">Check your inbox</h2>
+          <p class="text-sm text-gray-500">
+            We sent a 6-digit code to <strong id="email-display" class="text-gray-700"></strong>.
+            It expires in 15 minutes.
+          </p>
+        </div>
+
+        <form id="otp-form" class="space-y-4" action="/auth/verify" method="post">
+          <input type="hidden" name="email" id="otp-email" />
+          <div class="space-y-1.5">
+            <label for="otp" class="block text-sm font-medium text-gray-700">Access code</label>
+            <input
+              id="otp"
+              name="otp"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]{6}"
+              maxlength="6"
+              placeholder="123456"
+              required
+              class="input-field w-full px-4 py-3 rounded-lg border border-gray-200 text-gray-900 text-sm placeholder-gray-400 tracking-widest text-center text-lg font-mono transition-all"
+            />
+          </div>
+          <button type="submit" class="btn-brand w-full py-3 rounded-lg text-white text-sm font-semibold">
+            Verify &amp; sign in
+          </button>
+        </form>
+
+        <div class="text-center">
+          <button onclick="resetToEmail()" class="text-xs text-gray-400 hover:text-gray-600 underline">
+            Use a different email
+          </button>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div id="error-msg" class="hidden text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3"></div>
+
+    </div>
+  </div>
+
+  <script>
+    async function handleEmailSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+
+      const formData = new FormData();
+      formData.append('email', email);
+      await fetch('/auth/request', { method: 'POST', body: formData });
+
+      // Always show OTP step (generic response prevents enumeration)
+      document.getElementById('email-display').textContent = email;
+      document.getElementById('otp-email').value = email;
+      document.getElementById('step-email').classList.add('hidden');
+      document.getElementById('step-otp').classList.remove('hidden');
+      document.getElementById('error-msg').classList.add('hidden');
+      document.getElementById('otp').focus();
+    }
+
+    function resetToEmail() {
+      document.getElementById('step-otp').classList.add('hidden');
+      document.getElementById('step-email').classList.remove('hidden');
+      document.getElementById('otp').value = '';
+      document.getElementById('email').focus();
+    }
+  </script>
+
+</body>
+</html>

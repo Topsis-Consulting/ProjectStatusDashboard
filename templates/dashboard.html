@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Topsis Consulting — Project Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#f75b3c',
+            'brand-dark': '#d94a2e',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .status-open     { background: #fef3f2; color: #b42318; border-color: #fecdc9; }
+    .status-inprog   { background: #eff8ff; color: #175cd3; border-color: #b2ddff; }
+    .status-review   { background: #fdf4ff; color: #6941c6; border-color: #e9d7fe; }
+    .status-done     { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .priority-high   { color: #b42318; }
+    .priority-medium { color: #b45309; }
+    .priority-low    { color: #6b7280; }
+    .card { background: white; border-radius: 12px; border: 1px solid #f0f0f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .go-live-banner {
+      background: linear-gradient(135deg, #f75b3c 0%, #d94a2e 100%);
+    }
+    .sidebar-active { background: rgba(247, 91, 60, 0.08); color: #f75b3c; }
+    .issue-row { cursor: pointer; }
+    .issue-row:hover { background: #f9fafb; }
+    #slide-panel { transition: transform 0.25s ease; transform: translateX(100%); }
+    #slide-panel.open { transform: translateX(0); }
+    #slide-overlay { transition: opacity 0.25s ease; }
+    .filter-btn { border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 10px; font-size: 12px; background: white; cursor: pointer; color: #6b7280; }
+    .filter-btn.active { border-color: #f75b3c; color: #f75b3c; background: #fff5f3; font-weight: 500; }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex">
+
+  <!-- Sidebar -->
+  <aside class="hidden lg:flex flex-col w-56 bg-white border-r border-gray-100 fixed h-full z-10">
+    <div class="p-5 border-b border-gray-100">
+      <img src="../static/Topsis_logo.png" alt="Topsis Consulting" class="h-12 w-auto" />
+    </div>
+
+    <!-- Tenant identity -->
+    <div class="px-4 py-4 border-b border-gray-100">
+      <div class="flex items-center gap-3">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold text-gray-900 truncate">{{TENANT_NAME}}</p>
+          <p class="text-xs text-gray-400">Project: {{PROJECT_KEY}}</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 px-3 py-4 space-y-0.5">
+      <a href="#" class="sidebar-active flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Dashboard
+      </a>
+    </nav>
+
+    <div class="px-3 py-4 border-t border-gray-100">
+      <div class="flex items-center gap-2.5 px-3 py-2">
+        <div class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-600">JP</div>
+        <div class="min-w-0">
+          <p class="text-xs text-gray-500 truncate">{{USER_EMAIL}}</p>
+        </div>
+      </div>
+      <a href="login.html" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 mt-1">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Sign out
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 lg:ml-56 flex flex-col min-h-screen">
+
+    <!-- Top bar -->
+    <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+      <div>
+        <h1 class="text-lg font-semibold text-gray-900">{{TENANT_NAME}}</h1>
+        <p class="text-xs text-gray-400">{{EPIC_NAME}}</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+          Live
+        </span>
+      </div>
+    </header>
+
+    <div class="flex-1 px-6 py-6 space-y-6 max-w-5xl w-full mx-auto">
+
+        <!-- Go Live Banner — injected by server if Go Live ticket exists -->
+      {{GO_LIVE_HTML}}
+
+      <!-- Stats row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-gray-200 transition-all" onclick="filterStat(this, 'open')" id="stat-card-open">
+          <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Open Issues</p>
+          <p class="text-3xl font-bold text-gray-900 mt-1">{{STAT_OPEN}}</p>
+          <p class="text-xs text-gray-400 mt-1 stat-hint">click to filter</p>
+        </div>
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-blue-200 transition-all" onclick="filterStat(this, 'inprog')" id="stat-card-inprog">
+          <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">In Progress</p>
+          <p class="text-3xl font-bold text-gray-900 mt-1">{{STAT_INPROG}}</p>
+          <p class="text-xs text-gray-400 mt-1 stat-hint">click to filter</p>
+        </div>
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-yellow-200 transition-all" onclick="filterStat(this, 'questions')" id="stat-card-questions">
+          <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Questions</p>
+          <p class="text-3xl font-bold text-yellow-600 mt-1">{{STAT_QUESTIONS}}</p>
+          <p class="text-xs text-gray-400 mt-1 stat-hint">click to filter</p>
+        </div>
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-red-200 transition-all" onclick="filterStat(this, 'high')" id="stat-card-high">
+          <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">High Priority</p>
+          <p class="text-3xl font-bold text-red-600 mt-1">{{STAT_HIGH}}</p>
+          <p class="text-xs text-gray-400 mt-1 stat-hint">click to filter</p>
+        </div>
+      </div>
+
+      <!-- Two-column layout: open issues + recent activity -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Open Issues (wider) -->
+        <div class="card lg:col-span-2 flex flex-col">
+          <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-gray-900">Open Issues</h2>
+            <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{OPEN_COUNT}} total</span>
+          </div>
+
+          <!-- Filters -->
+          <div class="px-5 py-3 border-b border-gray-50 flex flex-wrap gap-2 items-center">
+            <span class="text-xs text-gray-400 font-medium mr-1">Assignee:</span>
+            <div id="assignee-filters" class="flex flex-wrap gap-1.5">
+              <button class="filter-btn active" onclick="filterAssignee(this, null)">All</button>
+              {{ASSIGNEE_FILTER_BTNS}}
+            </div>
+            <span class="text-xs text-gray-400 font-medium ml-3 mr-1">Status:</span>
+            <div id="status-filters" class="flex flex-wrap gap-1.5">
+              <button class="filter-btn active" onclick="filterStatus(this, null)">All</button>
+              {{STATUS_FILTER_BTNS}}
+            </div>
+          </div>
+
+          <div id="issues-list" class="divide-y divide-gray-50">
+            {{ISSUES_HTML}}
+          </div>
+        </div>
+
+        <!-- Recent Activity (narrower) -->
+        <div class="card flex flex-col">
+          <div class="px-5 py-4 border-b border-gray-50">
+            <h2 class="text-sm font-semibold text-gray-900">Recent Activity</h2>
+          </div>
+
+          <div class="flex-1 divide-y divide-gray-50">
+            {{ACTIVITY_HTML}}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Slide-out overlay -->
+  <div id="slide-overlay" class="fixed inset-0 bg-black/20 z-20 hidden opacity-0" onclick="closePanel()"></div>
+
+  <!-- Slide-out panel -->
+  <div id="slide-panel" class="fixed top-0 right-0 h-full w-full max-w-lg bg-white shadow-2xl z-30 flex flex-col">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div class="min-w-0">
+        <p id="panel-key" class="text-xs text-gray-400 font-mono"></p>
+        <h3 id="panel-title" class="text-sm font-semibold text-gray-900 mt-0.5 leading-snug"></h3>
+      </div>
+      <button onclick="closePanel()" class="ml-4 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+      <!-- Meta row -->
+      <div class="flex flex-wrap gap-3">
+        <div class="text-xs">
+          <span class="text-gray-400">Status</span>
+          <p id="panel-status" class="font-medium text-gray-800 mt-0.5"></p>
+        </div>
+        <div class="text-xs">
+          <span class="text-gray-400">Priority</span>
+          <p id="panel-priority" class="font-medium text-gray-800 mt-0.5"></p>
+        </div>
+        <div class="text-xs">
+          <span class="text-gray-400">Assignee</span>
+          <p id="panel-assignee" class="font-medium text-gray-800 mt-0.5"></p>
+        </div>
+        <div class="text-xs">
+          <span class="text-gray-400">Due date</span>
+          <p id="panel-duedate" class="font-medium text-gray-800 mt-0.5"></p>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Description</p>
+        <p id="panel-description" class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"></p>
+      </div>
+
+      <!-- Comments -->
+      <div>
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Comments</p>
+        <div id="panel-comments" class="space-y-3"></div>
+      </div>
+
+    </div>
+
+    <div id="panel-loading" class="absolute inset-0 flex items-center justify-center bg-white hidden">
+      <div class="w-6 h-6 border-2 border-gray-200 border-t-brand rounded-full animate-spin" style="border-top-color:#f75b3c"></div>
+    </div>
+  </div>
+
+  <script>
+    let activeAssignee = null;
+    let activeStatus = null;
+    let activeStatCard = null;
+
+    const statCardConfig = {
+      open:      { ring: 'ring-gray-400',   bg: 'bg-gray-50'    },
+      inprog:    { ring: 'ring-blue-400',   bg: 'bg-blue-50'    },
+      questions: { ring: 'ring-yellow-400', bg: 'bg-yellow-50'  },
+      high:      { ring: 'ring-red-400',    bg: 'bg-red-50'     },
+    };
+
+    function filterStat(el, type) {
+      if (activeStatCard) {
+        const prev = document.getElementById(`stat-card-${activeStatCard}`);
+        const cfg = statCardConfig[activeStatCard];
+        prev.classList.remove('ring-2', cfg.ring, cfg.bg);
+        prev.querySelector('.stat-hint').textContent = 'click to filter';
+      }
+      if (activeStatCard === type) {
+        activeStatCard = null;
+      } else {
+        activeStatCard = type;
+        const cfg = statCardConfig[type];
+        el.classList.add('ring-2', cfg.ring, cfg.bg);
+        el.querySelector('.stat-hint').textContent = 'click to clear';
+      }
+      applyFilters();
+    }
+
+    function filterAssignee(btn, value) {
+      activeAssignee = value;
+      document.querySelectorAll('#assignee-filters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilters();
+    }
+
+    function filterStatus(btn, value) {
+      activeStatus = value;
+      document.querySelectorAll('#status-filters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilters();
+    }
+
+    function filterPriority() {
+      // legacy — now handled by filterStat
+      filterStat(document.getElementById('stat-card-high'), 'high');
+      if (false) {
+        // placeholder to avoid syntax error on removal
+      }
+      applyFilters();
+    }
+
+    function applyFilters() {
+      document.querySelectorAll('#issues-list .issue-row').forEach(row => {
+        const assignee = row.dataset.assignee || '';
+        const status = row.dataset.status || '';
+        const priority = row.dataset.priority || '';
+        const matchA = !activeAssignee || assignee === activeAssignee;
+        const matchS = !activeStatus || status === activeStatus;
+        let matchCard = true;
+        if (activeStatCard === 'open')      matchCard = status !== 'In Progress' && status !== 'Questions';
+        if (activeStatCard === 'inprog')    matchCard = status === 'In Progress';
+        if (activeStatCard === 'questions') matchCard = status === 'Questions';
+        if (activeStatCard === 'high')      matchCard = priority === 'high';
+        row.style.display = (matchA && matchS && matchCard) ? '' : 'none';
+      });
+    }
+
+    async function openIssue(key) {
+      const panel = document.getElementById('slide-panel');
+      const overlay = document.getElementById('slide-overlay');
+      const loading = document.getElementById('panel-loading');
+
+      overlay.classList.remove('hidden');
+      setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+      panel.classList.add('open');
+      loading.classList.remove('hidden');
+
+      document.getElementById('panel-key').textContent = key;
+      document.getElementById('panel-title').textContent = '';
+      document.getElementById('panel-status').textContent = '';
+      document.getElementById('panel-priority').textContent = '';
+      document.getElementById('panel-assignee').textContent = '';
+      document.getElementById('panel-duedate').textContent = '';
+      document.getElementById('panel-description').textContent = '';
+      document.getElementById('panel-comments').innerHTML = '';
+
+      try {
+        const res = await fetch(`/api/issue/${key}`);
+        const d = await res.json();
+
+        document.getElementById('panel-title').textContent = d.summary;
+        document.getElementById('panel-status').textContent = d.status;
+        document.getElementById('panel-priority').textContent = d.priority;
+        document.getElementById('panel-assignee').textContent = d.assignee || 'Unassigned';
+        document.getElementById('panel-duedate').textContent = d.duedate || 'Not set';
+        document.getElementById('panel-description').textContent = d.description || 'No description provided.';
+
+        const commentsEl = document.getElementById('panel-comments');
+        if (d.comments.length === 0) {
+          commentsEl.innerHTML = '<p class="text-xs text-gray-400">No comments yet.</p>';
+        } else {
+          commentsEl.innerHTML = d.comments.map(c => `
+            <div class="bg-gray-50 rounded-lg p-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-medium text-gray-700">${c.author}</span>
+                <span class="text-xs text-gray-400">${c.created}</span>
+              </div>
+              <p class="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">${c.body}</p>
+            </div>
+          `).join('');
+        }
+      } catch(e) {
+        document.getElementById('panel-description').textContent = 'Failed to load issue details.';
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
+
+    function closePanel() {
+      const panel = document.getElementById('slide-panel');
+      const overlay = document.getElementById('slide-overlay');
+      panel.classList.remove('open');
+      overlay.classList.add('opacity-0');
+      setTimeout(() => overlay.classList.add('hidden'), 250);
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+  </script>
+
+</body>
+</html>

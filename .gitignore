@@ -1,0 +1,25 @@
+# Secrets — NEVER commit these
+.env
+*.key
+*.pem
+*.p12
+*.pfx
+sfdx-auth-url.txt
+config/local.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
