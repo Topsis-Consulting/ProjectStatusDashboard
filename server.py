@@ -65,6 +65,26 @@ SF_MILESTONES = [
     ("Project Deadline", "Project_Deadline_Date__c"),
 ]
 
+# LOE (Story point estimate) → effort weight for the Build Complete %.
+# Fibonacci story points are ordinal, not linear effort — an 8 is ~40h of work,
+# not 8x a "1" (~1h). Summing raw points understates the effort concentrated in
+# large tickets, so completion is weighted by these values (rough hour anchors
+# from the DOUG LOE rubric) instead of the raw points. These are estimates, not
+# measured actuals — recalibrate empirically once actuals are captured (see the
+# GitHub issue). Tune here; single source of truth.
+LOE_WEIGHTS = {1: 1, 2: 4, 3: 8, 5: 20, 8: 40, 13: 60}
+
+
+def _loe_weight(points) -> float:
+    """Effort weight for a story-point value; falls back to the raw value for any
+    off-scale number so nothing is silently dropped."""
+    try:
+        p = int(points)
+    except (TypeError, ValueError):
+        return 0
+    return LOE_WEIGHTS.get(p, float(p))
+
+
 # In-memory OTP store for local dev (replaced by Redis in production)
 _otp_store: dict[str, tuple[str, float]] = {}  # key -> (otp, expires_at)
 
@@ -276,6 +296,45 @@ async def _fetch_epics(project_key: str, include_all: bool = False) -> list[dict
                 break
 
     return epics
+
+
+async def _fetch_completion(project_key: str, epic_key: str | None) -> dict | None:
+    """Effort-weighted completion for an epic, from the Story point estimate
+    (customfield_10016) LOE on its child Tasks. Returns None if no epic."""
+    if not epic_key:
+        return None
+    scope = f'"Epic Link" = {epic_key} OR parent = {epic_key}'
+    issues: list = []
+    token = None
+    async with httpx.AsyncClient() as client:
+        for _ in range(15):
+            body = {"jql": f"({scope})", "maxResults": 100, "fields": ["status", "customfield_10016"]}
+            if token:
+                body["nextPageToken"] = token
+            resp = await client.post(f"{JIRA_URL}/rest/api/3/search/jql", json=body, auth=_jira_auth())
+            resp.raise_for_status()
+            data = resp.json()
+            issues += data.get("issues", [])
+            token = data.get("nextPageToken")
+            if not token:
+                break
+
+    def is_done(i):
+        return i["fields"]["status"]["statusCategory"]["key"] == "done"
+
+    with_loe = [i for i in issues if i["fields"].get("customfield_10016") is not None]
+    # Completion is weighted by effort (LOE_WEIGHTS), not raw story points, since
+    # Fibonacci points aren't a linear effort scale.
+    total_weight = sum(_loe_weight(i["fields"]["customfield_10016"]) for i in with_loe)
+    done_weight = sum(_loe_weight(i["fields"]["customfield_10016"]) for i in with_loe if is_done(i))
+    return {
+        "tickets_total": len(issues),
+        "tickets_with_loe": len(with_loe),
+        "done_count": sum(1 for i in issues if is_done(i)),
+        "done_points": sum(int(i["fields"]["customfield_10016"]) for i in with_loe if is_done(i)),
+        "total_points": sum(int(i["fields"]["customfield_10016"]) for i in with_loe),
+        "percent": round(done_weight / total_weight * 100) if total_weight else 0,
+    }
 
 
 def _summarize_issues(issues: list) -> dict:
@@ -520,6 +579,28 @@ def _render_epic_switcher(epics: list[dict], current_key: str | None) -> str:
     </div>"""
 
 
+def _render_completion(c: dict | None) -> str:
+    """Effort-weighted completion bar. Returns '' when there's no LOE data."""
+    if not c or c["tickets_with_loe"] == 0:
+        return ""
+    pct = c["percent"]
+    coverage = ""
+    if c["tickets_with_loe"] < c["tickets_total"]:
+        coverage = f' · {c["tickets_with_loe"]} of {c["tickets_total"]} tasks estimated'
+    return f"""
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-900">Build Complete</h2>
+        <span class="text-xs text-gray-400">effort-weighted</span>
+      </div>
+      <div class="flex items-baseline gap-3 mb-2">
+        <span class="text-3xl font-bold text-gray-900">{pct}%</span>
+        <span class="text-xs text-gray-400">{c['done_count']} of {c['tickets_total']} tasks done{coverage}</span>
+      </div>
+      <div class="cmp-track"><div class="cmp-fill" style="width:{pct}%"></div></div>
+    </div>"""
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -625,6 +706,13 @@ async def dashboard(session: str | None = Cookie(default=None), epic: str | None
             epic_switcher_html = _render_epic_switcher(epics, epic_key)
         except Exception as e:
             print(f"Epic list fetch failed: {e}")
+
+    # Effort-weighted completion for the selected epic (from LOE / Story point estimate)
+    completion_html = ""
+    try:
+        completion_html = _render_completion(await _fetch_completion(project_key, epic_key))
+    except Exception as e:
+        print(f"Completion fetch failed: {e}")
 
     # Salesforce milestone timeline — only valid on the tenant's home epic, since
     # sf_opportunity_id is pinned to the tenant (there is no epic→Opportunity map yet).
@@ -739,6 +827,7 @@ async def dashboard(session: str | None = Cookie(default=None), epic: str | None
         .replace("{{STATUS_FILTER_BTNS}}", status_btns)
         .replace("{{ACTIVITY_HTML}}", activity_html)
         .replace("{{TIMELINE_HTML}}", timeline_html or go_live_html)
+        .replace("{{COMPLETION_HTML}}", completion_html)
         .replace("{{EPIC_SWITCHER_HTML}}", epic_switcher_html)
         .replace("{{OPEN_COUNT}}", str(stats["total_open"]))
     )
