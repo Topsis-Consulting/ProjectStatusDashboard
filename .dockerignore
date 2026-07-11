@@ -1,0 +1,15 @@
+# Never bake secrets or local cruft into the image
+.env
+*.key
+*.pem
+*.p12
+*.pfx
+.git
+.gitignore
+__pycache__/
+*.pyc
+.venv/
+venv/
+.claude/
+.DS_Store
+*.md

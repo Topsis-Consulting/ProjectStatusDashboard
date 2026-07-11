@@ -1,9 +1,11 @@
 {
   "topsisconsulting.com": {
     "tenant_name": "Topsis Consulting (Internal)",
+    "role": "employee",
     "jira_project_key": "CON",
-    "jira_epic_key": "CON-3088",
+    "jira_epic_key": "CON-11773",
     "logo_url": null,
-    "go_live_ticket_summary": "Go Live"
+    "go_live_ticket_summary": "Go Live",
+    "sf_opportunity_id": "006UZ00000ZHLlSYAX"
   }
 }
