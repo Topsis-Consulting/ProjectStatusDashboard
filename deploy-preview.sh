@@ -49,6 +49,15 @@ with open(sys.argv[1], "w") as f:
 print("env-vars file written with keys:", ", ".join(out.keys()))
 PY
 
+# Bump the patch version on every deploy (single source of truth: ./VERSION).
+# The bumped file ships in the --source . build, so the running app shows it.
+if [ -f VERSION ]; then
+  V=$(cat VERSION)
+  MAJOR=${V%%.*}; REST=${V#*.}; MINOR=${REST%%.*}; PATCH=${REST#*.}
+  echo "$MAJOR.$MINOR.$((PATCH + 1))" > VERSION
+  echo "Version bumped: $V -> $(cat VERSION)"
+fi
+
 echo "Deploying $SERVICE to project $PROJECT_ID ($REGION)…"
 gcloud config set project "$PROJECT_ID" >/dev/null
 

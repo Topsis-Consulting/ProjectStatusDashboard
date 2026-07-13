@@ -90,6 +90,11 @@ _otp_store: dict[str, tuple[str, float]] = {}  # key -> (otp, expires_at)
 
 BASE_DIR = Path(__file__).parent
 
+# App version — bumped by deploy-preview.sh on each deploy; shown in the UI so it's
+# clear which build is live. Falls back to "dev" if the file is missing.
+_version_file = BASE_DIR / "VERSION"
+APP_VERSION = _version_file.read_text().strip() if _version_file.exists() else "dev"
+
 # ---------------------------------------------------------------------------
 # Tenant registry
 # ---------------------------------------------------------------------------
@@ -617,7 +622,7 @@ async def dev_login():
 
 @app.get("/", response_class=HTMLResponse)
 async def login_page():
-    return _render("login.html")
+    return _render("login.html", {"APP_VERSION": APP_VERSION})
 
 
 @app.get("/auth/request")
@@ -838,6 +843,7 @@ async def dashboard(session: str | None = Cookie(default=None), epic: str | None
         .replace("{{COMPLETION_HTML}}", completion_html)
         .replace("{{EPIC_SWITCHER_HTML}}", epic_switcher_html)
         .replace("{{OPEN_COUNT}}", str(stats["total_open"]))
+        .replace("{{APP_VERSION}}", APP_VERSION)
     )
     return HTMLResponse(html)
 
