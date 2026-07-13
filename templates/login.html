@@ -150,7 +150,7 @@
           </p>
         </div>
 
-        <form id="otp-form" class="space-y-4" action="/auth/verify" method="post">
+        <form id="otp-form" class="space-y-4" onsubmit="handleOtpSubmit(event)" action="/auth/verify" method="post">
           <input type="hidden" name="email" id="otp-email" />
           <div class="space-y-1.5">
             <label for="otp" class="block text-sm font-medium text-gray-700">Access code</label>
@@ -202,10 +202,41 @@
       document.getElementById('otp').focus();
     }
 
+    async function handleOtpSubmit(e) {
+      e.preventDefault();
+      const errEl = document.getElementById('error-msg');
+      errEl.classList.add('hidden');
+
+      const formData = new FormData();
+      formData.append('email', document.getElementById('otp-email').value);
+      formData.append('otp', document.getElementById('otp').value);
+
+      try {
+        const res = await fetch('/auth/verify', { method: 'POST', body: formData });
+        // Success: server 303-redirects to /dashboard (cookie is set on that response).
+        if (res.ok || res.redirected) {
+          window.location.href = '/dashboard';
+          return;
+        }
+        // Failure (e.g. 401): show the message inline and stay on this step —
+        // never leave the browser stranded on the POST-only /auth/verify URL.
+        let msg = 'Invalid or expired code. Please try again.';
+        try { const d = await res.json(); if (d && d.detail) msg = d.detail; } catch (_) {}
+        errEl.textContent = msg;
+        errEl.classList.remove('hidden');
+        document.getElementById('otp').value = '';
+        document.getElementById('otp').focus();
+      } catch (_) {
+        errEl.textContent = 'Something went wrong. Please try again.';
+        errEl.classList.remove('hidden');
+      }
+    }
+
     function resetToEmail() {
       document.getElementById('step-otp').classList.add('hidden');
       document.getElementById('step-email').classList.remove('hidden');
       document.getElementById('otp').value = '';
+      document.getElementById('error-msg').classList.add('hidden');
       document.getElementById('email').focus();
     }
   </script>

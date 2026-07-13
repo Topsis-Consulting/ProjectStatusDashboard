@@ -620,6 +620,14 @@ async def login_page():
     return _render("login.html")
 
 
+@app.get("/auth/request")
+@app.get("/auth/verify")
+async def auth_get_redirect():
+    # These are POST-only. A stray GET (bookmark, refresh, back button) would
+    # otherwise return a bare 405 "Method Not Allowed" — send them to login instead.
+    return RedirectResponse(url="/")
+
+
 @app.post("/auth/request")
 async def auth_request(email: str = Form(...)):
     domain = email.split("@")[-1].lower() if "@" in email else ""
