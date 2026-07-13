@@ -4,27 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Topsis Consulting — Client Portal</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: '#f75b3c',
-            'brand-dark': '#d94a2e',
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          },
-        }
-      }
-    }
-  </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/app.css" />
   <style>
     .brand-panel {
-      background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-color: #16213e;
+      /* Dots layered ON TOP of the navy gradient (order matters: first image wins the top layer) */
+      background-image:
+        radial-gradient(rgba(247, 91, 60, 0.15) 1px, transparent 1px),
+        linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background-size: 24px 24px, cover;
     }
     .input-field:focus {
       outline: none;
@@ -41,13 +29,11 @@
     .btn-brand:active {
       transform: scale(0.98);
     }
-    .dot-pattern {
-      background-image: radial-gradient(rgba(247, 91, 60, 0.15) 1px, transparent 1px);
-      background-size: 24px 24px;
-    }
+    /* .dot-pattern is now folded into .brand-panel above so the dots layer over
+       the gradient instead of replacing it. Kept as a no-op for the class hook. */
   </style>
 </head>
-<body class="h-screen flex overflow-hidden font-sans">
+<body class="min-h-screen flex font-sans">
 
   <!-- Left: Brand Panel -->
   <div class="brand-panel dot-pattern hidden md:flex md:w-1/2 flex-col justify-between p-12 text-white">
