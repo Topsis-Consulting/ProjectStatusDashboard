@@ -267,40 +267,64 @@ async def _fetch_jira_issues(project_key: str, epic_key: str | None = None) -> d
     }
 
 
-async def _fetch_epics(project_key: str, include_all: bool = False) -> list[dict]:
-    """List epics in a project for the employee switcher.
-
-    Default (include_all=False): active epics only (statusCategory != Done),
-    with the '[DUPLICATE - TO DELETE]' housekeeping epics filtered out.
-    """
-    jql = f"project = {project_key} AND issuetype = Epic"
-    if not include_all:
-        jql += ' AND statusCategory != Done AND summary !~ "DUPLICATE"'
-    jql += " ORDER BY summary ASC"
-
-    # /search/jql caps at 100 results per page — paginate via nextPageToken so
-    # the switcher isn't silently truncated to the first 100 epics.
-    epics: list[dict] = []
+async def _paginate_search(client: httpx.AsyncClient, jql: str, fields: list) -> list:
+    """Return all issues matching a JQL, following nextPageToken (100/page cap)."""
+    out: list = []
     token = None
-    async with httpx.AsyncClient() as client:
-        for _ in range(15):  # safety cap: 15 pages = 1500 epics
-            body = {"jql": jql, "maxResults": 100, "fields": ["summary", "status"]}
-            if token:
-                body["nextPageToken"] = token
-            resp = await client.post(f"{JIRA_URL}/rest/api/3/search/jql", json=body, auth=_jira_auth())
-            resp.raise_for_status()
-            data = resp.json()
-            for i in data.get("issues", []):
-                epics.append({
-                    "key": i["key"],
-                    "summary": i["fields"]["summary"],
-                    "status": i["fields"]["status"]["name"],
-                })
-            token = data.get("nextPageToken")
-            if not token:
-                break
+    for _ in range(30):  # safety cap: 30 pages = 3000 issues
+        body = {"jql": jql, "maxResults": 100, "fields": fields}
+        if token:
+            body["nextPageToken"] = token
+        resp = await client.post(f"{JIRA_URL}/rest/api/3/search/jql", json=body, auth=_jira_auth())
+        resp.raise_for_status()
+        data = resp.json()
+        out += data.get("issues", [])
+        token = data.get("nextPageToken")
+        if not token:
+            break
+    return out
 
-    return epics
+
+async def _fetch_epics(project_key: str, include_all: bool = False) -> list[dict]:
+    """Epics for the employee switcher.
+
+    Default (include_all=False): only epics that have at least one child issue in
+    the "To Do" (Open) or "Questions" column — hides stale epics with no live work.
+    CON is team-managed, so children link to their epic via `parent`.
+
+    include_all=True: every epic in the project (incl. Done / duplicates) — backs
+    the "Show all epics" toggle.
+    """
+    def _epic(i: dict) -> dict:
+        return {"key": i["key"], "summary": i["fields"]["summary"], "status": i["fields"]["status"]["name"]}
+
+    async with httpx.AsyncClient() as client:
+        if include_all:
+            issues = await _paginate_search(
+                client, f"project = {project_key} AND issuetype = Epic ORDER BY summary ASC", ["summary", "status"]
+            )
+            return [_epic(i) for i in issues]
+
+        # Epic keys that have a child issue in the To Do (Open) or Questions column.
+        kids = await _paginate_search(
+            client,
+            f'project = {project_key} AND issuetype != Epic AND status in ("To Do", "Questions")',
+            ["parent"],
+        )
+        active = {
+            p["key"] for i in kids
+            if (p := i.get("fields", {}).get("parent")) and p.get("key")
+        }
+        if not active:
+            return []
+
+        keys = ", ".join(sorted(active))
+        jql = (
+            f"project = {project_key} AND issuetype = Epic AND key in ({keys}) "
+            'AND summary !~ "DUPLICATE" ORDER BY summary ASC'
+        )
+        issues = await _paginate_search(client, jql, ["summary", "status"])
+        return [_epic(i) for i in issues]
 
 
 async def _fetch_completion(project_key: str, epic_key: str | None) -> dict | None:
