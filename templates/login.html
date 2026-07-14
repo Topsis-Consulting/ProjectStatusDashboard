@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Topsis Consulting — Client Portal</title>
-  <link rel="stylesheet" href="/static/app.css" />
   <style>
     .brand-panel {
       background-color: #16213e;
@@ -32,6 +31,8 @@
     /* .dot-pattern is now folded into .brand-panel above so the dots layer over
        the gradient instead of replacing it. Kept as a no-op for the class hook. */
   </style>
+  <!-- Utility stylesheet loads AFTER component styles above so utilities (e.g. .hidden) win the cascade -->
+  <link rel="stylesheet" href="/static/app.css" />
 </head>
 <body class="min-h-screen flex font-sans">
 

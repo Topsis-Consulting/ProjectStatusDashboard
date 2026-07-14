@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Topsis Consulting — Project Dashboard</title>
-  <link rel="stylesheet" href="/static/app.css" />
   <style>
     .status-open     { background: #fef3f2; color: #b42318; border-color: #fecdc9; }
     .status-inprog   { background: #eff8ff; color: #175cd3; border-color: #b2ddff; }
@@ -64,6 +63,8 @@
     .cmp-track { height: 10px; background: #f0f0f0; border-radius: 9999px; overflow: hidden; }
     .cmp-fill { height: 100%; background: linear-gradient(90deg, #f75b3c, #d94a2e); border-radius: 9999px; transition: width 0.4s ease; }
   </style>
+  <!-- Utility stylesheet loads AFTER component styles above so utilities (e.g. .hidden) win the cascade -->
+  <link rel="stylesheet" href="/static/app.css" />
 </head>
 <body class="bg-gray-50 font-sans min-h-screen flex">
 
